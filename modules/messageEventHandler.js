@@ -64,7 +64,7 @@ exports.config = {
 
 exports.info = {
 	name: "Message event handler",
-	category: "System",
+	category: "Event",
 	description: 'Does stuff when the client gets the "message" event',
 	usage: "Automatic"
 };

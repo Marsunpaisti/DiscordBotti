@@ -19,7 +19,7 @@ exports.config = {
 
 exports.info = {
 	name: "Ready event handler",
-	category: "System",
+	category: "Event",
 	description: 'Does stuff when the client gets the "ready" event',
 	usage: "Automatic"
 };
