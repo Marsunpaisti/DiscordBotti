@@ -18,6 +18,7 @@ client.settings.ensure("default", client.config.defaultSettings);
 require("./utils/clientFunctions")(client);
 const init = async () => {
 	await loadModules();
+	await client.settings.defer;
 	client.login(client.config.token);
 };
 
