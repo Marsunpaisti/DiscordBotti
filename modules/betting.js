@@ -4,6 +4,7 @@ const schedule = require("node-schedule");
 const betDatabase = new Enmap({ name: "coronaBetDatabase" });
 const channelDatabase = new Enmap({ name: "coronaReportingChannels" });
 const scoreDatabase = new Enmap({ name: "coronaBettingScoreDatabase" });
+let previousTotalCases = null;
 
 const addBet = async (client, message, bet) => {
 	let serverDatabase = betDatabase.get(message.guild.id);
@@ -102,6 +103,26 @@ const printCurrentCases = async (client, message) => {
 	return message.channel.send(`Currently there are ${totalCases} confirmed corona cases`);
 };
 
+const printStatistics = async (client, message) => {
+	axios.get("https://w3qa5ydb4l.execute-api.eu-west-1.amazonaws.com/prod/finnishCoronaData").then(results => {
+		const data = results.data.confirmed;
+		const sortedData = {};
+		for (let occurance of data) {
+			if (!sortedData[occurance.healthCareDistrict]) {
+				sortedData[occurance.healthCareDistrict.toString()] = 1;
+			} else {
+				sortedData[occurance.healthCareDistrict.toString()] += 1;
+			}
+		}
+		let msgString = "**Detailed statistics: \n**";
+		msgString += "Total cases: " + data.length + "\n";
+		for (let key in sortedData) {
+			msgString += key + ": " + sortedData[key] + "\n";
+		}
+		message.channel.send(msgString);
+	});
+};
+
 const checkWinners = async client => {
 	let coronaData = null;
 	for (let attempt = 1; attempt <= 10; attempt++) {
@@ -192,12 +213,12 @@ const checkWinnersForGuild = async (client, guildId, totalCases) => {
 	message += "------------------------------------------------------------\n";
 	let channelId = channelDatabase.get(guildId);
 	if (!channelId) return;
-	let channel = client.channels.resolve(channelId);
+	let channel = await client.channels.resolve(channelId);
 	if (!channel) return;
 	channel.send(message);
 };
 
-const setChannel = (client, message) => {
+const setChannel = async (client, message) => {
 	channelDatabase.set(message.guild.id, message.channel.id);
 	client.logger.log(
 		`Set channel ${message.channel.name} (${message.channel.id}) as corona betting channel for guild ${message.guild.name} (${message.guild.id})`
@@ -218,15 +239,53 @@ const printScores = async (client, message) => {
 	return message.channel.send(msg);
 };
 
+const listenForChanges = async client => {
+	client.logger.debug("Checking cases");
+	let coronaData = null;
+	for (let attempt = 1; attempt <= 10; attempt++) {
+		try {
+			let response = await axios.get("https://w3qa5ydb4l.execute-api.eu-west-1.amazonaws.com/prod/finnishCoronaData");
+			coronaData = await response.data;
+		} catch (e) {
+			client.logger.error(`Error getting corona data during attempt ${attempt}: ${e}`);
+		}
+		if (coronaData) break;
+		if (attempt <= 10) {
+			client.logger.log(`Retrying in 5 seconds.`);
+			await new Promise(resolve => setTimeout(resolve, 5000));
+		}
+	}
+	const totalCases = coronaData.confirmed.length;
+
+	//If stats have changed since last time
+	if (!previousTotalCases || previousTotalCases != totalCases) {
+		previousTotalCases = totalCases;
+
+		client.guilds.cache.forEach(async guild => {
+			let channelId = channelDatabase.get(guild.id);
+			if (!channelId) return;
+			let channel = await client.channels.resolve(channelId);
+			if (!channel) return;
+			channel.send(`Currently there are ${totalCases} confirmed corona cases`);
+		});
+
+		return;
+	}
+};
+
 exports.init = async client => {
 	client.logger.log(`\tLoading corona bet database`);
 	await betDatabase.defer;
 	client.logger.log(`\tCorona bet database loaded`);
-	const scheduleRule = new schedule.RecurrenceRule();
-	scheduleRule.hour = 18;
-	schedule.scheduleJob(scheduleRule, () => {
+	const winnerCheckRule = new schedule.RecurrenceRule();
+	winnerCheckRule.hour = 18;
+	schedule.scheduleJob(winnerCheckRule, () => {
 		checkWinners(client);
 	});
+
+	client.setInterval(() => {
+		listenForChanges(client);
+	}, 1000 * 60 * 10);
 };
 
 exports.run = async (client, message, command, args) => {
@@ -238,6 +297,7 @@ exports.run = async (client, message, command, args) => {
 			return message.reply(`Invalid bet amount`);
 		}
 		addBet(client, message, bet);
+		if (!channelDatabase.get(message.guild.id)) setChannel(client, message);
 	} else if (command == "getbets" || command == "currentbets" || command == "bets") {
 		getCurrentBets(client, message);
 	} else if (command == "setbettingchannel" || command == "setcoronachannel") {
@@ -246,6 +306,8 @@ exports.run = async (client, message, command, args) => {
 		printScores(client, message);
 	} else if (command == "cases") {
 		printCurrentCases(client, message);
+	} else if (command == "statistics") {
+		printStatistics(client, message);
 	}
 };
 
@@ -262,7 +324,8 @@ exports.config = {
 		"setbettingchannel",
 		"setcoronachannel",
 		"scores",
-		"scoreboard"
+		"scoreboard",
+		"statistics"
 	],
 	allowPrivateMessages: false
 };
@@ -272,5 +335,5 @@ exports.info = {
 	category: "Fun",
 	description: "Lets users bet for coronavirus cases for the next day, keeping score",
 	usage:
-		"\n**bet** [numberOfCases] to bet\n**bets** to get current bets\n**cases** to get current statistics on coronavirus\n**setbettingchannel** to set the current channel for winner reporting"
+		"\n**bet** [numberOfCases] to bet\n**bets** to get current bets\n**cases** to get current confirmed cases on coronavirus\n**statistics** to get detailed stats on coronavirus\n**setbettingchannel** to set the current channel for winner reporting"
 };
