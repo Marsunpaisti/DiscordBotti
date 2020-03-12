@@ -81,6 +81,27 @@ const getCurrentBets = async (client, message) => {
 	return message.channel.send(messageString);
 };
 
+const printCurrentCases = async (client, message) => {
+	let coronaData = null;
+	for (let attempt = 1; attempt <= 10; attempt++) {
+		try {
+			let response = await axios.get("https://w3qa5ydb4l.execute-api.eu-west-1.amazonaws.com/prod/finnishCoronaData");
+			coronaData = await response.data;
+		} catch (e) {
+			client.logger.error(`Error getting corona data during attempt ${attempt}: ${e}`);
+		}
+		if (coronaData) break;
+		if (attempt <= 10) {
+			client.logger.log(`Retrying in 5 seconds.`);
+			await new Promise(resolve => setTimeout(resolve, 5000));
+		}
+	}
+
+	const totalCases = coronaData.confirmed.length;
+
+	return message.channel.send(`Currently there are ${totalCases} confirmed corona cases`);
+};
+
 const checkWinners = async client => {
 	let coronaData = null;
 	for (let attempt = 1; attempt <= 10; attempt++) {
@@ -125,7 +146,17 @@ const checkWinnersForGuild = async (client, guildId, totalCases) => {
 		guessDifferences[difference].push(bet);
 	}
 
-	let sortedKeys = Object.keys(guessDifferences).sort();
+	client.logger.debug(JSON.stringify(guessDifferences));
+
+	let unsortedKeys = Object.keys(guessDifferences);
+	client.logger.debug("Unsorted: " + unsortedKeys);
+	let sortedKeys = unsortedKeys
+		.map(key => {
+			return parseInt(key);
+		})
+		.sort((a, b) => a - b);
+
+	client.logger.debug("Sorted: " + sortedKeys);
 	let message = "Current corona total: " + totalCases + " confirmed cases\n";
 	message += "The winners of coronabingo today are:\n";
 	let guessesArray = guessDifferences[sortedKeys[0]];
@@ -215,6 +246,8 @@ exports.run = async (client, message, command, args) => {
 		printScores(client, message);
 	} else if (command == "check") {
 		checkWinners(client);
+	} else if (command == "cases") {
+		printCurrentCases(client, message);
 	}
 };
 
