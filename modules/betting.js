@@ -22,6 +22,7 @@ const addBet = async (client, message, bet) => {
 		username: message.author.username,
 		userId: message.author.id,
 		bet: bet,
+		guildId: message.guild.id,
 		date: new Date().toJSON()
 	};
 
@@ -131,12 +132,17 @@ const checkWinnersForGuild = async (client, guildId, totalCases) => {
 	for (let bet of guessesArray) {
 		let username = (await client.users.fetch(bet.userId).username) || bet.username;
 		message += `**${username}** won with a bet of ${bet.bet}\n`;
-		let prevScore = scoreDatabase.get(bet.userId);
+
+		//Add score
+		let serverScores = scoreDatabase.get(bet.guildId);
+		if (!serverScores) serverScores = {};
+		let prevScore = serverScores[bet.userId];
 		if (!prevScore) {
-			scoreDatabase.set(bet.userId, 1);
+			serverScores[bet.userId] = 1;
 		} else {
-			scoreDatabase.set(bet.userId, prevScore + 1);
+			serverScores[bet.userId] = prevScore + 1;
 		}
+		scoreDatabase.set(bet.guildId, serverScores);
 	}
 	message += "------------------------------------------------------------\n";
 	message += "TOP 5 Guesses:\n";
@@ -144,7 +150,7 @@ const checkWinnersForGuild = async (client, guildId, totalCases) => {
 	for (let key of sortedKeys) {
 		index += 1;
 		guessesArray = guessDifferences[key];
-		message += `${index}:`;
+		message += `${index}: `;
 		for (let bet of guessesArray) {
 			let username = (await client.users.fetch(bet.userId).username) || bet.username;
 			message += `**${username}** (${bet.bet}) `;
@@ -160,14 +166,26 @@ const checkWinnersForGuild = async (client, guildId, totalCases) => {
 	channel.send(message);
 };
 
-function setChannel(client, message) {
+const setChannel = (client, message) => {
 	channelDatabase.set(message.guild.id, message.channel.id);
 	client.logger.log(
 		`Set channel ${message.channel.name} (${message.channel.id}) as corona betting channel for guild ${message.guild.name} (${message.guild.id})`
 	);
 
 	return message.channel.send(`Corona betting winners will now be announced on this channel!`);
-}
+};
+
+const printScores = async (client, message) => {
+	let serverScores = scoreDatabase.get(message.guild.id);
+	if (!serverScores) return message.channel.send("No scores yet for this server!");
+	let msg = "Current scores:\n";
+	for (let key in serverScores) {
+		let score = serverScores[key];
+		let user = await client.users.resolve(key).username;
+		msg += `${user}:\t${score}\n`;
+	}
+	return message.channel.send(msg);
+};
 
 exports.init = async client => {
 	client.logger.log(`\tLoading corona bet database`);
@@ -193,6 +211,10 @@ exports.run = async (client, message, command, args) => {
 		getCurrentBets(client, message);
 	} else if (command == "setbettingchannel" || command == "setcoronachannel") {
 		setChannel(client, message);
+	} else if (command == "scoreboard" || command == "scores") {
+		printScores(client, message);
+	} else if (command == "check") {
+		checkWinners(client);
 	}
 };
 
@@ -207,7 +229,10 @@ exports.config = {
 		"currentbets",
 		"bets",
 		"setbettingchannel",
-		"setcoronachannel"
+		"setcoronachannel",
+		"scores",
+		"scoreboard",
+		"check"
 	],
 	allowPrivateMessages: false
 };
