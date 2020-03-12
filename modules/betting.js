@@ -153,7 +153,6 @@ const checkWinnersForGuild = async (client, guildId, totalCases) => {
 	if (!serverDatabase) return;
 
 	const date = new Date();
-	date.setDate(date.getDate() + 1);
 	const todayDateString = date.getDate() + "." + (date.getMonth() + 1) + "." + date.getFullYear();
 
 	const todaysBets = serverDatabase[todayDateString];
