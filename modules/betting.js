@@ -60,7 +60,7 @@ const getCurrentBets = async (client, message) => {
 		for (let key in todaysBets) {
 			let bet = todaysBets[key];
 			let userName = (await client.users.fetch(bet.userId).username) || bet.username;
-			messageString += userName + " is betting for:\t\t\t" + bet.bet + " cases\n";
+			messageString += userName + " is betting for: " + bet.bet + " cases\n";
 		}
 	} else {
 		messageString += "No bets for today\n";
@@ -73,7 +73,7 @@ const getCurrentBets = async (client, message) => {
 		for (let key in tomorrowBets) {
 			let bet = tomorrowBets[key];
 			let userName = (await client.users.fetch(bet.userId).username) || bet.username;
-			messageString += userName + " is betting for:\t\t\t" + bet.bet + " cases\n";
+			messageString += userName + " is betting for: " + bet.bet + " cases\n";
 		}
 	}
 	messageString += "------------------------------------------------------------\n";
@@ -244,8 +244,6 @@ exports.run = async (client, message, command, args) => {
 		setChannel(client, message);
 	} else if (command == "scoreboard" || command == "scores") {
 		printScores(client, message);
-	} else if (command == "check") {
-		checkWinners(client);
 	} else if (command == "cases") {
 		printCurrentCases(client, message);
 	}
@@ -264,8 +262,7 @@ exports.config = {
 		"setbettingchannel",
 		"setcoronachannel",
 		"scores",
-		"scoreboard",
-		"check"
+		"scoreboard"
 	],
 	allowPrivateMessages: false
 };
