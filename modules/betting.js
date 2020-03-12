@@ -274,9 +274,9 @@ const listenForChanges = async client => {
 };
 
 exports.init = async client => {
-	client.logger.log(`\tLoading corona bet database`);
 	await betDatabase.defer;
-	client.logger.log(`\tCorona bet database loaded`);
+	await scoreDatabase.defer;
+	await channelDatabase.defer;
 	const winnerCheckRule = new schedule.RecurrenceRule();
 	winnerCheckRule.hour = 18;
 	schedule.scheduleJob(winnerCheckRule, () => {
