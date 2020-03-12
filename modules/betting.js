@@ -335,5 +335,5 @@ exports.info = {
 	category: "Fun",
 	description: "Lets users bet for coronavirus cases for the next day, keeping score",
 	usage:
-		"\n**bet** [numberOfCases] to bet\n**bets** to get current bets\n**cases** to get current confirmed cases on coronavirus\n**statistics** to get detailed stats on coronavirus\n**setbettingchannel** to set the current channel for winner reporting"
+		"**bet** [numberOfCases] to bet\n**bets** to get current bets\n**cases** to get current confirmed cases on coronavirus\n**statistics** to get detailed stats on coronavirus\n**setbettingchannel** to set the current channel for winner reporting\n**scores** to set the current scoreboard"
 };

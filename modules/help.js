@@ -23,7 +23,7 @@ exports.run = async (client, message, command, args) => {
 		let msgString = "**" + searchModule.info.name + "**\n";
 		msgString += searchModule.info.description + "\n";
 		msgString += "Commands: " + searchModule.config.commands.join(" ") + "\n";
-		msgString += "Usage: " + searchModule.info.usage + "\n";
+		msgString += "Usage: \n" + searchModule.info.usage + "\n";
 		return message.channel.send(msgString);
 	}
 };
