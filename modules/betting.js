@@ -196,7 +196,7 @@ const checkWinnersForGuild = async (client, guildId, totalCases) => {
 		scoreDatabase.set(bet.guildId, serverScores);
 	}
 	message += "------------------------------------------------------------\n";
-	message += "TOP 5 Guesses:\n";
+	message += "TOP Guesses:\n";
 	let index = 0;
 	for (let key of sortedKeys) {
 		index += 1;
@@ -278,6 +278,8 @@ exports.init = async client => {
 	await channelDatabase.defer;
 	const winnerCheckRule = new schedule.RecurrenceRule();
 	winnerCheckRule.hour = 18;
+	winnerCheckRule.minute = 0;
+	winnerCheckRule.second = 0;
 	schedule.scheduleJob(winnerCheckRule, () => {
 		checkWinners(client);
 	});
