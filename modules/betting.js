@@ -178,8 +178,13 @@ const checkWinnersForGuild = async (client, guildId, totalCases) => {
 
 	client.logger.debug("Sorted: " + sortedKeys);
 	let message = "Current corona total: " + totalCases + " confirmed cases\n";
-	message += "The winners of coronabingo today are:\n";
 	let guessesArray = guessDifferences[sortedKeys[0]];
+
+	if (guessesArray.length > 1) {
+		message += "The winners of coronabingo today are:\n";
+	} else {
+		message += "The winner of coronabingo today is:\n";
+	}
 	for (let bet of guessesArray) {
 		let username = (await client.users.fetch(bet.userId).username) || bet.username;
 		message += `**${username}** won with a bet of ${bet.bet}\n`;
