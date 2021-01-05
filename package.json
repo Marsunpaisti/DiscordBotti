@@ -9,7 +9,7 @@
 	"author": "Paisti",
 	"license": "MIT",
 	"dependencies": {
-		"axios": "^0.19.2",
+		"axios": "^0.21.1",
 		"better-sqlite-pool": "^0.2.3",
 		"canvas": "^2.6.1",
 		"chalk": "^3.0.0",
